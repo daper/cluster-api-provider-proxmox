@@ -20,7 +20,7 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 const (
 	// VMProvisionedCondition documents the status of the provisioning of a ProxmoxMachine and its underlying ProxmoxVM.
-	VMProvisionedCondition clusterv1.ConditionType = "VMProvisioned"
+	VMProvisionedCondition clusterv1.ConditionType = "BootstrapReady"
 
 	// VMProvisionFailedReason used for failures during instance provisioning.
 	VMProvisionFailedReason = "VMProvisionFailed"
@@ -55,10 +55,18 @@ const (
 	// PoweringOnReason documents (Severity=Info) a ProxmoxMachine/ProxmoxVM currently executing the power on sequence.
 	PoweringOnReason = "PoweringOn"
 
+	// PoweringOffReason documents (Severity=Info) a ProxmoxMachine/ProxmoxVM currently executing the power off sequence.
+	PoweringOffReason = "PoweringOff"
+
 	// PoweringOnFailedReason (Severity=Warning) documents a ProxmoxMachine/ProxmoxVM controller detecting
 	// an error while powering on; those kind of errors are usually transient and failed provisioning
 	// are automatically re-tried by the controller.
 	PoweringOnFailedReason = "PoweringOnFailed"
+
+	// PoweringOffFailedReason (Severity=Warning) documents a ProxmoxMachine/ProxmoxVM controller detecting
+	// an error while powering off; those kind of errors are usually transient and failed provisioning
+	// are automatically re-tried by the controller.
+	PoweringOffFailedReason = "PoweringOffFailed"
 
 	// VMProvisionStarted used for starting vm provisioning.
 	VMProvisionStarted = "VMProvisionStarted"

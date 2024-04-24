@@ -45,5 +45,9 @@ type Client interface {
 
 	StartVM(ctx context.Context, vm *proxmox.VirtualMachine) (*proxmox.Task, error)
 
+	ShutdownVM(ctx context.Context, vm *proxmox.VirtualMachine) (*proxmox.Task, error)
+
+	StopVM(ctx context.Context, vm *proxmox.VirtualMachine) (*proxmox.Task, error)
+
 	TagVM(ctx context.Context, vm *proxmox.VirtualMachine, tag string) (*proxmox.Task, error)
 }

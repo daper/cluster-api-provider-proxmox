@@ -241,6 +241,16 @@ func (c *APIClient) StartVM(ctx context.Context, vm *proxmox.VirtualMachine) (*p
 	return vm.Start(ctx)
 }
 
+// ShutdownVM issues a shutdown on the VM.
+func (c *APIClient) ShutdownVM(ctx context.Context, vm *proxmox.VirtualMachine) (*proxmox.Task, error) {
+	return vm.Shutdown(ctx)
+}
+
+// StopVM stops the VM.
+func (c *APIClient) StopVM(ctx context.Context, vm *proxmox.VirtualMachine) (*proxmox.Task, error) {
+	return vm.Stop(ctx)
+}
+
 // TagVM tags the VM.
 func (c *APIClient) TagVM(ctx context.Context, vm *proxmox.VirtualMachine, tag string) (*proxmox.Task, error) {
 	return vm.AddTag(ctx, tag)

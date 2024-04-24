@@ -18,6 +18,7 @@ limitations under the License.
 package vmservice
 
 import (
+	"fmt"
 	"context"
 
 	"github.com/pkg/errors"
@@ -70,24 +71,31 @@ func ReconcileVM(ctx context.Context, scope *scope.MachineScope) (infrav1alpha1.
 		return vm, err
 	}
 
-	if err := reconcileDisks(ctx, scope); err != nil {
-		return vm, err
-	}
+	if !scope.ProxmoxMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+		if requeue, err := reconcilePowerStateOff(ctx, scope); err != nil || requeue {
+			return vm, err
+		}
+	} else {
 
-	if requeue, err := reconcileIPAddresses(ctx, scope); err != nil || requeue {
-		return vm, err
-	}
+		if err := reconcileDisks(ctx, scope); err != nil {
+			return vm, err
+		}
 
-	if requeue, err := reconcileBootstrapData(ctx, scope); err != nil || requeue {
-		return vm, err
-	}
+		if requeue, err := reconcileIPAddresses(ctx, scope); err != nil || requeue {
+			return vm, err
+		}
 
-	if requeue, err := reconcilePowerState(ctx, scope); err != nil || requeue {
-		return vm, err
-	}
+		if requeue, err := reconcileBootstrapData(ctx, scope); err != nil || requeue {
+			return vm, err
+		}
 
-	if err := reconcileMachineAddresses(scope); err != nil {
-		return vm, err
+		if requeue, err := reconcilePowerStateOn(ctx, scope); err != nil || requeue {
+			return vm, err
+		}
+
+		if err := reconcileMachineAddresses(scope); err != nil {
+			return vm, err
+		}
 	}
 
 	vm.State = infrav1alpha1.VirtualMachineStateReady
@@ -140,8 +148,8 @@ func ensureVirtualMachine(ctx context.Context, machineScope *scope.MachineScope)
 	}
 
 	// make sure spec.providerID is always set.
-	biosUUID := extractUUID(vmRef.VirtualMachineConfig.SMBios1)
-	machineScope.SetProviderID(biosUUID)
+	providerID := fmt.Sprintf("%s/%d", machineScope.ProxmoxMachine.GetNode(), vmRef.VMID)
+	machineScope.SetProviderID(providerID)
 
 	// setting the VirtualMachine object for completing the reconciliation.
 	machineScope.SetVirtualMachine(vmRef)

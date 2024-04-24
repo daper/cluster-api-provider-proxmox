@@ -156,10 +156,37 @@ func (r *ProxmoxMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 func (r *ProxmoxMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
-	machineScope.Logger.Info("Handling deleted ProxmoxMachine")
+	machineScope.Logger.Info("Handling deleted ProxmoxMachine", "vmstatus", machineScope.ProxmoxMachine.Status.VMStatus)
 	conditions.MarkFalse(machineScope.ProxmoxMachine, infrav1alpha1.VMProvisionedCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
 
-	err := vmservice.DeleteVM(ctx, machineScope)
+	vm, err := vmservice.ReconcileVM(ctx, machineScope)
+	if err != nil {
+		if requeueErr := new(taskservice.RequeueError); errors.As(err, &requeueErr) {
+			machineScope.Error(err, "Requeue requested")
+			return reconcile.Result{RequeueAfter: requeueErr.RequeueAfter()}, nil
+		}
+
+		if vmservice.VMNotFound(err) {
+			machineScope.InfraCluster.ProxmoxCluster.RemoveNodeLocation(machineScope.Name(), util.IsControlPlaneMachine(machineScope.Machine))
+			// The VM is deleted so remove the finalizer.
+			ctrlutil.RemoveFinalizer(machineScope.ProxmoxMachine, infrav1alpha1.MachineFinalizer)
+			return reconcile.Result{}, machineScope.InfraCluster.PatchObject()
+		}
+
+		machineScope.Logger.Error(err, "error reconciling VM")
+		return reconcile.Result{}, errors.Wrapf(err, "failed to reconcile VM")
+	}
+	machineScope.Logger.Info("VM State", "state", vm.State)
+
+	if vm.State != infrav1alpha1.VirtualMachineStateReady {
+		machineScope.Logger.Info(
+			"VM state is not reconciled",
+			"expectedVMState", infrav1alpha1.VirtualMachineStateStopped,
+			"actualVMState", vm.State)
+		return reconcile.Result{RequeueAfter: infrav1alpha1.DefaultReconcilerRequeue}, nil
+	}
+
+	err = vmservice.DeleteVM(ctx, machineScope)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

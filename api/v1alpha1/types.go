@@ -29,6 +29,9 @@ const (
 
 	// VirtualMachineStateReady is the string representing a powered-on VM with reported IP addresses.
 	VirtualMachineStateReady VirtualMachineState = "ready"
+
+	// VirtualMachineStateStopped is the string representing a powered-off VM.
+	VirtualMachineStateStopped VirtualMachineState = "stopped"
 )
 
 // VirtualMachine represents data about a Proxmox virtual machine object.
